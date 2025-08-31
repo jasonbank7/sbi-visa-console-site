@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SBI VISA CONSOLE 8.4 — Approval Protocol Utility</title>
+<meta name="description" content="Generate system logs for refreshing or generating approval protocols. PHT timestamps, masked card, structured Audit Trail ID (daily reset).">
+<style>
+:root{
+  --bg:#0b0e13; --panel:#101621; --panel-2:#0c1220;
+  --text:#e8edf7; --muted:#9aa6bf; --accent:#d4af37;
+  --line:#1a2436; --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0; background:linear-gradient(180deg,#0b0e13,#0d1117 35%, #0b0e13 100%); color:var(--text); font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;}
+header{position:sticky; top:0; z-index:10; background:rgba(9,12,18,.6); backdrop-filter:saturate(120%) blur(6px); border-bottom:1px solid var(--line)}
+.brand{max-width:1140px; margin:0 auto; padding:16px; display:flex; align-items:center; gap:12px; font-weight:700; letter-spacing:.4px}
+.badge{border:1px solid var(--accent); color:var(--accent); padding:2px 8px; border-radius:999px; font-size:12px}
+.main{max-width:1140px; margin:0 auto; padding:24px 16px 48px}
+.tabs{display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap}
+.tabbtn{appearance:none; border:1px solid #25324a; background:#0e1524; color:var(--text); padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; letter-spacing:.3px}
+.tabbtn.active{ border-color:var(--accent); background:linear-gradient(180deg,#181f2e,#101623); }
+.grid{display:grid; grid-template-columns:1.1fr .9fr; gap:24px}
+@media (max-width: 1000px){ .grid{grid-template-columns:1fr} }
+.card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; box-shadow: 0 10px 30px rgba(0,0,0,.25), inset 0 0 0 1px rgba(255,255,255,.02);}
+.card h2{margin:0 0 8px; font-size:16px; color:#d2d9e8; letter-spacing:.35px}
+.sub{color:var(--muted); font-size:12px; margin-bottom:10px}
+.row{display:flex; gap:12px; flex-wrap:wrap}
+.col{flex:1 1 220px}
+label{display:block; font-size:12px; color:#b9c3d6; margin:12px 0 6px}
+input[type="text"], input[type="number"]{
+  width:100%; padding:12px 14px; border-radius:10px;
+  border:1px solid #1b2435; background:var(--panel-2); color:var(--text);
+  font-family:var(--mono); letter-spacing:.4px; outline:none;
+  transition:border .2s ease, box-shadow .2s ease;
+}
+select{
+  width:100%; padding:12px 14px; border-radius:10px;
+  border:1px solid #1b2435; background:var(--panel-2); color:var(--text);
+  outline:none; font-weight:600; letter-spacing:.3px;
+}
+input[type="text"]:focus, input[type="number"]:focus, select:focus{border-color:#25324a; box-shadow:0 0 0 2px rgba(37,50,74,.35)}
+.actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:14px}
+button{appearance:none; border:1px solid #25324a; background:#0e1524; color:var(--text);
+  padding:10px 14px; border-radius:10px; cursor:pointer; font-weight:600; letter-spacing:.3px; transition:transform .06s ease, border .2s ease, background .2s ease;}
+button.primary{ border-color:var(--accent); background:linear-gradient(180deg,#181f2e,#101623); }
+button:hover{ transform:translateY(-1px) }
+.out{font-family:var(--mono); white-space:pre; background:#0a0f17; color:#eaf0ff; border-radius:12px;
+  border:1px solid var(--line); padding:16px; min-height:380px; overflow:auto; line-height:1.42; letter-spacing:.25px;}
+.tool{display:flex; gap:8px; justify-content:flex-end; margin-top:10px}
+.kv{display:grid; grid-template-columns:180px 1fr; gap:8px; align-items:center}
+.hr{height:1px; background:linear-gradient(90deg,transparent,#202a3e,transparent); margin:14px 0}
+.msg{font-size:12px; margin-top:8px}
+.msg.ok{color:#a0d99b} .msg.err{color:#ff7474}
+.footer{margin-top:24px; font-size:12px; color:var(--muted)}
+.hide{display:none}
+.small{font-size:12px; color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div style="font-size:18px">SBI VISA CONSOLE 8.4</div>
+    <span class="badge">PHT</span>
+  </div>
+</header>
+
+<main class="main">
+  <div class="tabs">
+    <button class="tabbtn active" data-tab="refresh">Refresh Approval Codes</button>
+    <button class="tabbtn" data-tab="generate">Generate New Approval Protocol</button>
+  </div>
+
+  <!-- REFRESH TAB -->
+  <div id="tab-refresh">
+    <div class="grid">
+      <section class="card">
+        <h2>Refresh Approval Codes — Input</h2>
+        <div class="sub">Produces a system generated <strong>refresh</strong> log. PHT timestamps. Audit Trail ID auto-increments and resets daily at midnight PHT.</div>
+
+        <div class="row">
+          <div class="col">
+            <label for="r-card">Card Number (16 digits)</label>
+            <input id="r-card" type="text" placeholder="#### #### #### ####" autocomplete="off">
+          </div>
+          <div class="col">
+            <label for="r-code">Approval code to refresh (4 or 6 digits)</label>
+            <input id="r-code" type="text" placeholder="7731" autocomplete="off">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label for="r-days">Validity (days)</label>
+            <input id="r-days" type="number" min="1" max="60" value="7">
+          </div>
+          <div class="col">
+            <label for="r-operator">Operator ID</label>
+            <input id="r-operator" type="text" value="7616500927">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label for="r-node">Node</label>
+            <input id="r-node" type="text" value="BPS-VISASEC-ASIA-777">
+          </div>
+          <div class="col">
+            <label for="r-server">Server</label>
+            <input id="r-server" type="text" value="SBI PRINCIPAL VISA CORE (INDIA) – REMOTE RD ACCESS">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="r-gen">Generate Refresh Log</button>
+          <button id="r-clear">Clear</button>
+        </div>
+        <div id="r-msg" class="msg small"></div>
+      </section>
+
+      <section class="card">
+        <h2>Output — System Generated Log</h2>
+        <div id="r-out" class="out" aria-label="Generated output"></div>
+        <div class="tool">
+          <button id="r-copy">Copy</button>
+          <button id="r-dl">Download .txt</button>
+        </div>
+        <div class="footer">
+          Default header:
+          <div class="kv"><div>Product</div><div>SBI VISA CONSOLE 8.4 — SYSTEM REFRESH LOG OUTPUT</div></div>
+          <div class="hr"></div>
+          This page is client-side only and works offline.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- GENERATE TAB -->
+  <div id="tab-generate" class="hide">
+    <div class="grid">
+      <section class="card">
+        <h2>Generate New Approval Protocol — Input</h2>
+        <div class="sub">Creates a system generated <strong>generation</strong> log with new approval protocol(s). All codes start with digit 7.</div>
+
+        <div class="row">
+          <div class="col">
+            <label for="g-card">Card Number (16 digits)</label>
+            <input id="g-card" type="text" placeholder="#### #### #### ####" autocomplete="off">
+          </div>
+          <div class="col">
+            <label for="g-days">Validity (days)</label>
+            <input id="g-days" type="number" min="1" max="60" value="3">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label for="g-length">Protocol length</label>
+            <select id="g-length">
+              <option value="6" selected>6 digits (preferred)</option>
+              <option value="4">4 digits</option>
+            </select>
+          </div>
+          <div class="col">
+            <label for="g-qty">Quantity of codes</label>
+            <input id="g-qty" type="number" min="1" max="50" value="3">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label for="g-operator">Operator ID</label>
+            <input id="g-operator" type="text" value="7616500927">
+          </div>
+          <div class="col">
+            <label for="g-node">Node</label>
+            <input id="g-node" type="text" value="BPS-VISASEC-ASIA-777">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col">
+            <label for="g-server">Server</label>
+            <input id="g-server" type="text" value="SBI PRINCIPAL VISA CORE (INDIA) – REMOTE RD ACCESS">
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="g-gen">Generate New Protocol Log</button>
+          <button id="g-clear">Clear</button>
+        </div>
+        <div id="g-msg" class="msg small"></div>
+      </section>
+
+      <section class="card">
+        <h2>Output — System Generated Log</h2>
+        <div id="g-out" class="out" aria-label="Generated output"></div>
+        <div class="tool">
+          <button id="g-copy">Copy</button>
+          <button id="g-dl">Download .txt</button>
+        </div>
+        <div class="footer">
+          Default header:
+          <div class="kv"><div>Product</div><div>SBI VISA CONSOLE 8.4 — SYSTEM GENERATION LOG OUTPUT</div></div>
+          <div class="hr"></div>
+          This page is client-side only and works offline.
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  // ===== Tabs =====
+  const tabs = document.querySelectorAll('.tabbtn');
+  const panelRefresh = document.getElementById('tab-refresh');
+  const panelGenerate = document.getElementById('tab-generate');
+  tabs.forEach(btn=>btn.addEventListener('click', ()=>{
+    tabs.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    if(btn.dataset.tab==='refresh'){ panelRefresh.classList.remove('hide'); panelGenerate.classList.add('hide'); }
+    else { panelGenerate.classList.remove('hide'); panelRefresh.classList.add('hide'); }
+  }));
+
+  // ===== Time helpers (PHT) =====
+  function dtPartsPHT(ms){
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone:'Asia/Manila',
+      year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+    }).formatToParts(new Date(ms));
+    const m = {}; for(const p of parts) m[p.type] = p.value; return m;
+  }
+  function fmtPHT(ms){ const p = dtPartsPHT(ms); return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second} PHT`; }
+  function addDays(ms, d){ return ms + d*24*60*60*1000; }
+  function phtDateKey(ms){ const p = dtPartsPHT(ms); return `${p.year}${p.month}${p.day}`; }
+
+  // ===== Audit Trail ID (daily reset) =====
+  function pad(n,l){ return String(n).padStart(l,'0'); }
+  function nextCounter(ms){
+    const key = 'ATX-CNT-' + phtDateKey(ms);
+    let n = parseInt(localStorage.getItem(key) || '0', 10);
+    if(isNaN(n)) n = 0; n += 1;
+    localStorage.setItem(key, String(n));
+    return n;
+  }
+  function buildATX(ms){
+    const p = dtPartsPHT(ms);
+    const seq = pad(nextCounter(ms), 4);
+    return `ATX-${p.year}${p.month}${p.day}-${p.hour}${p.minute}${p.second}-${seq}`;
+  }
+
+  // ===== Utils =====
+  const $ = id => document.getElementById(id);
+  const onlyDigits = s => (s||'').replace(/\\D+/g,'');
+  const mask16 = s => `${s.slice(0,4)}••••••••${s.slice(-4)}`;
+  const protoLabel = len => len===6 ? '6 DIGIT APPROVAL PROTOCOL' : '4 DIGIT APPROVAL PROTOCOL';
+
+  // ===== Refresh bindings =====
+  const rCard=$('r-card'), rCode=$('r-code'), rDays=$('r-days'), rOp=$('r-operator'), rNode=$('r-node'), rServer=$('r-server');
+  const rGen=$('r-gen'), rClr=$('r-clear'), rOut=$('r-out'), rMsg=$('r-msg'), rCopy=$('r-copy'), rDl=$('r-dl');
+
+  function rSetMsg(t, ok){ rMsg.textContent=t; rMsg.className = 'msg small ' + (ok?'ok':'err'); }
+
+  rGen.addEventListener('click', ()=>{
+    rSetMsg('', true);
+    const card = onlyDigits(rCard.value);
+    const code = onlyDigits(rCode.value);
+    const days = parseInt(rDays.value, 10);
+    const op = (rOp.value||'').trim() || 'OPERATOR';
+    const node = (rNode.value||'').trim() || 'NODE';
+    const server = (rServer.value||'').trim() || 'SERVER';
+
+    if(card.length!==16) return rSetMsg('Card number must be 16 digits.', false);
+    if(!(code.length===4 || code.length===6)) return rSetMsg('Approval code must be 4 or 6 digits.', false);
+    if(!Number.isFinite(days) || days<=0) return rSetMsg('Validity days must be a positive number.', false);
+
+    const now = Date.now(), ts = fmtPHT(now), exp = fmtPHT(addDays(now, days));
+    const atx = buildATX(now), hours = days*24;
+
+    const log =
+`===============================================================
+:: SBI VISA CONSOLE 8.4 — SYSTEM REFRESH LOG OUTPUT ::
+===============================================================
+[ PROCESS TYPE ]    :: REFRESH APPROVAL CODES
+[ TIMESTAMP ]       :: ${ts}
+[ OPERATOR ID ]     :: ${op}
+[ NODE ]            :: ${node}
+[ SERVER ]          :: ${server}
+[ AUDIT TRAIL ID ]  :: ${atx}
+
+---------------------------------------------------------------
+[ CARD DETAILS ]
+Card Number         :: ${mask16(card)}
+Approval Code Seq.  :: ${code}
+Protocol Type       :: ${protoLabel(code.length)}
+Upload Status       :: SUCCESSFULLY REFRESHED
+
+---------------------------------------------------------------
+[ VALIDITY INFORMATION ]
+Refreshed On        :: ${ts}
+New Expiry Date     :: ${exp}
+Validity Duration   :: ${days} DAYS (${hours} HOURS)
+
+---------------------------------------------------------------
+[ SYSTEM STATUS ]
+Previous approval protocols invalidated
+New approval sequence activated
+Banking logs updated in compliance with VISA OPS
+
+===============================================================
+:: END OF LOG — SYSTEM GENERATED LOG ::
+===============================================================`;
+
+    rOut.textContent = log;
+    rSetMsg('Generated successfully.', true);
+  });
+
+  rClr.addEventListener('click', ()=>{
+    rCard.value=''; rCode.value=''; rDays.value='7'; rOut.textContent=''; rSetMsg('Cleared.', true);
+  });
+  rCopy.addEventListener('click', async ()=>{
+    if(!rOut.textContent) return rSetMsg('Nothing to copy. Generate a log first.', false);
+    try{ await navigator.clipboard.writeText(rOut.textContent); rSetMsg('Copied to clipboard.', true);}catch(e){ rSetMsg('Copy failed. Select and copy manually.', false);}
+  });
+  rDl.addEventListener('click', ()=>{
+    if(!rOut.textContent) return rSetMsg('Nothing to download. Generate a log first.', false);
+    const p = dtPartsPHT(Date.now());
+    const name = `RefreshLog_${p.year}${p.month}${p.day}_${p.hour}${p.minute}${p.second}.txt`;
+    const blob = new Blob([rOut.textContent], {type:'text/plain'});
+    const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },0);
+  });
+
+  // ===== Generate bindings =====
+  const gCard=$('g-card'), gDays=$('g-days'), gLen=$('g-length'), gQty=$('g-qty'), gOp=$('g-operator'), gNode=$('g-node'), gServer=$('g-server');
+  const gGen=$('g-gen'), gClr=$('g-clear'), gOut=$('g-out'), gMsg=$('g-msg'), gCopy=$('g-copy'), gDl=$('g-dl');
+
+  function gSetMsg(t, ok){ gMsg.textContent=t; gMsg.className = 'msg small ' + (ok?'ok':'err'); }
+
+  function randomDigitsStart7(n){
+    // Ensure first digit is '7', remaining (n-1) digits random using crypto
+    if(n<1) return '7';
+    const buf = new Uint32Array(n-1);
+    window.crypto.getRandomValues(buf);
+    let s = '7';
+    for(let i=0;i<buf.length;i++){ s += String(buf[i] % 10); }
+    return s;
+  }
+
+  gGen.addEventListener('click', ()=>{
+    gSetMsg('', true);
+    const card = onlyDigits(gCard.value);
+    const days = parseInt(gDays.value, 10);
+    const len = parseInt(gLen.value, 10);
+    let qty = parseInt(gQty.value, 10);
+    const op = (gOp.value||'').trim() || 'OPERATOR';
+    const node = (gNode.value||'').trim() || 'NODE';
+    const server = (gServer.value||'').trim() || 'SERVER';
+
+    if(card.length!==16) return gSetMsg('Card number must be 16 digits.', false);
+    if(!Number.isFinite(days) || days<=0) return gSetMsg('Validity days must be a positive number.', false);
+    if(!(len===4||len===6)) return gSetMsg('Protocol length must be 4 or 6.', false);
+    if(!Number.isFinite(qty) || qty<1) qty = 1;
+    if(qty>50) qty = 50;
+
+    const now = Date.now(), ts = fmtPHT(now), exp = fmtPHT(addDays(now, days));
+    const atx = buildATX(now), hours = days*24;
+
+    // Build enumerated list
+    let list = '';
+    for(let i=1;i<=qty;i++){
+      list += `   ${String(i).padStart(2,' ')}. ${randomDigitsStart7(len)}\n`;
+    }
+
+    const log =
+`===============================================================
+:: SBI VISA CONSOLE 8.4 — SYSTEM GENERATION LOG OUTPUT ::
+===============================================================
+[ PROCESS TYPE ]    :: GENERATE APPROVAL CODES
+[ TIMESTAMP ]       :: ${ts}
+[ OPERATOR ID ]     :: ${op}
+[ NODE ]            :: ${node}
+[ SERVER ]          :: ${server}
+[ AUDIT TRAIL ID ]  :: ${atx}
+
+---------------------------------------------------------------
+[ CARD DETAILS ]
+Card Number         :: ${mask16(card)}
+Generated Protocols ::
+${list.trimEnd()}
+Protocol Type       :: ${protoLabel(len)}
+Upload Status       :: SUCCESSFULLY GENERATED
+
+---------------------------------------------------------------
+[ VALIDITY INFORMATION ]
+Generated On        :: ${ts}
+Expiry Date         :: ${exp}
+Validity Duration   :: ${days} DAYS (${hours} HOURS)
+
+---------------------------------------------------------------
+[ SYSTEM STATUS ]
+Approval protocols issued
+Banking logs updated in compliance with VISA OPS
+
+===============================================================
+:: END OF LOG — SYSTEM GENERATED LOG ::
+===============================================================`;
+
+    gOut.textContent = log;
+    gSetMsg('Generated successfully.', true);
+  });
+
+  gClr.addEventListener('click', ()=>{
+    gCard.value=''; gDays.value='3'; gQty.value='3'; gOut.textContent=''; gSetMsg('Cleared.', true);
+  });
+  gCopy.addEventListener('click', async ()=>{
+    if(!gOut.textContent) return gSetMsg('Nothing to copy. Generate a log first.', false);
+    try{ await navigator.clipboard.writeText(gOut.textContent); gSetMsg('Copied to clipboard.', true);}catch(e){ gSetMsg('Copy failed. Select and copy manually.', false);}
+  });
+  gDl.addEventListener('click', ()=>{
+    if(!gOut.textContent) return gSetMsg('Nothing to download. Generate a log first.', false);
+    const p = dtPartsPHT(Date.now());
+    const name = `GenerationLog_${p.year}${p.month}${p.day}_${p.hour}${p.minute}${p.second}.txt`;
+    const blob = new Blob([gOut.textContent], {type:'text/plain'});
+    const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=name; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); },0);
+  });
+
+  // Prefill convenience
+  document.getElementById('r-card').value='4065 8752 1023 8316';
+  document.getElementById('r-code').value='7731';
+  document.getElementById('r-days').value='7';
+  document.getElementById('g-card').value='4065 8752 1023 8316';
+  document.getElementById('g-days').value='3';
+  document.getElementById('g-length').value='6';
+  document.getElementById('g-qty').value='3';
+})();
+</script>
+</body>
+</html>

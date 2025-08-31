@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Operator Login</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #0b0e13;
+    color: #e8edf7;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  .login-container {
+    background: #0f1524;
+    padding: 20px 30px;
+    border-radius: 12px;
+    width: 320px;
+    box-shadow: 0 0 12px rgba(0,0,0,0.5);
+  }
+  h1 {
+    margin: 0 0 15px;
+    font-size: 1.4em;
+    text-align: center;
+  }
+  label {
+    display: block;
+    margin-bottom: 4px;
+  }
+  input {
+    width: 100%;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    border: 1px solid #1b2435;
+    border-radius: 6px;
+    background: #0c1220;
+    color: #e8edf7;
+    box-sizing: border-box;
+  }
+  button {
+    width: 100%;
+    padding: 10px;
+    border: 0;
+    border-radius: 6px;
+    background: #181f2e;
+    color: #e8edf7;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .error {
+    color: #ff7c7c;
+    margin-bottom: 12px;
+    font-size: 0.9em;
+  }
+</style>
+</head>
+<body>
+<div class="login-container">
+  <h1>SBI‑VISA Console 8.4</h1>
+  <form id="loginForm">
+    <label for="operatorId">Operator ID</label>
+    <input id="operatorId" type="text" autocomplete="off" placeholder="Enter Operator ID" />
+
+    <label for="password">Password</label>
+    <input id="password" type="password" autocomplete="off" placeholder="Enter Password" />
+
+    <div id="error" class="error" style="display:none;"></div>
+    <button type="submit">Login</button>
+  </form>
+</div>
+
+<script>
+  // Points to your other HTML file. It uses a file URI to access your Desktop file.
+  const redirectTo = 'file:///C:/Users/jason/Desktop/sbi/sbi_visa_console_refresh_generate_pdf.html';
+
+  document.getElementById('loginForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    var operatorId = document.getElementById('operatorId').value.trim();
+    var password = document.getElementById('password').value.trim();
+    var errorEl = document.getElementById('error');
+
+    if (!operatorId || !password) {
+      errorEl.textContent = 'Please enter both Operator ID and Password.';
+      errorEl.style.display = 'block';
+      return;
+    }
+
+    errorEl.style.display = 'none';
+    // Redirect to your local file after login
+    window.location.href = redirectTo;
+  });
+</script>
+</body>
+</html>
